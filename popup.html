@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Colab Clicker</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            width: 250px;
+            margin: 0;
+            padding: 15px;
+            background-color: #202124;
+            color: #e8eaed;
+            text-align: center;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 16px;
+            color: #8ab4f8;
+        }
+
+        .status-container {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 6px;
+            background-color: #303134;
+            font-weight: bold;
+        }
+
+        .status-stopped {
+            color: #f28b82;
+        }
+
+        .status-running {
+            color: #81c995;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #9aa0a6;
+        }
+
+        .input-group input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            background-color: #202124;
+            border: 1px solid #5f6368;
+            border-radius: 4px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #8ab4f8;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .last-click-info {
+            font-size: 11px;
+            color: #9aa0a6;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        button {
+            flex: 1;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #btnStart {
+            background-color: #81c995;
+            color: #000;
+        }
+
+        #btnStop {
+            background-color: #f28b82;
+            color: #000;
+        }
+
+        button:disabled {
+            background-color: #5f6368;
+            color: #9aa0a6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Colab Clicker</h2>
+
+    <div class="status-container" id="statusDisplay">
+        <span class="status-stopped">Parado</span>
+    </div>
+
+    <div class="input-group">
+        <label for="intervalInput">Intervalo de clique (minutos):</label>
+        <input type="number" id="intervalInput" min="1" max="60" value="5">
+    </div>
+
+    <div class="last-click-info" id="lastClickDisplay">Último clique: --:--:--</div>
+
+    <div class="btn-group">
+        <button id="btnStart">Iniciar</button>
+        <button id="btnStop" disabled>Parar</button>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

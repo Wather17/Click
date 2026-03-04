@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Colab Clicker",
+  "version": "1.0",
+  "description": "Mantém o Google Colab rodando evitando desconexões por inatividade.",
+  "permissions": [
+    "storage",
+    "alarms",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://colab.research.google.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
