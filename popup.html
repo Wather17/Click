@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            width: 250px;
+            width: 280px;
             margin: 0;
             padding: 15px;
             background-color: #202124;
@@ -110,6 +110,99 @@
             color: #9aa0a6;
             cursor: not-allowed;
         }
+
+        /* Log de saúde */
+        .log-toggle-btn {
+            width: 100%;
+            margin-top: 12px;
+            padding: 6px;
+            background-color: #303134;
+            color: #9aa0a6;
+            border: 1px solid #5f6368;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .log-toggle-btn:hover {
+            background-color: #3c4043;
+            color: #e8eaed;
+        }
+
+        .log-container {
+            display: none;
+            margin-top: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: left;
+            border: 1px solid #5f6368;
+            border-radius: 4px;
+            background-color: #292a2d;
+            padding: 6px;
+        }
+
+        .log-entry {
+            font-size: 10px;
+            padding: 3px 4px;
+            border-bottom: 1px solid #3c4043;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: #8ab4f8;
+            font-weight: bold;
+        }
+
+        .log-click {
+            color: #81c995;
+        }
+
+        .log-warn {
+            color: #fdd663;
+        }
+
+        .log-reload {
+            color: #fcad70;
+        }
+
+        .log-error {
+            color: #f28b82;
+        }
+
+        .log-start {
+            color: #81c995;
+        }
+
+        .log-stop {
+            color: #9aa0a6;
+        }
+
+        .log-empty {
+            font-size: 10px;
+            color: #9aa0a6;
+            text-align: center;
+            padding: 10px;
+        }
+
+        /* Scrollbar estilizada */
+        .log-container::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .log-container::-webkit-scrollbar-track {
+            background: #292a2d;
+        }
+
+        .log-container::-webkit-scrollbar-thumb {
+            background: #5f6368;
+            border-radius: 2px;
+        }
     </style>
 </head>
 
@@ -132,6 +225,9 @@
         <button id="btnStart">Iniciar</button>
         <button id="btnStop" disabled>Parar</button>
     </div>
+
+    <button class="log-toggle-btn" id="btnToggleLog">📋 Ver Log</button>
+    <div class="log-container" id="logContainer"></div>
 
     <script src="popup.js"></script>
 </body>
