@@ -3,14 +3,22 @@
 (function () {
     console.log("[Colab Clicker] Tentando manter sessão ativa...");
 
-    // Estratégia 1: Botão padrão de "Connect" (quando cai e pede reconexão)
+    // Estratégia 1: Botão de "Connect" — SÓ clica se estiver DESCONECTADO
     const connectButton = document.querySelector('colab-connect-button');
     if (connectButton && connectButton.shadowRoot) {
         const btn = connectButton.shadowRoot.querySelector('#connect');
         if (btn) {
-            btn.click();
-            console.log("[Colab Clicker] ✅ Cliquei no botão Reconnect/Connect.");
-            return;
+            // Verifica o texto do botão para saber o estado real
+            const btnText = btn.textContent.trim().toLowerCase();
+            // Se o texto indica desconexão (connect, reconnect), clica
+            // Se já está conectado (mostra RAM/Disco ou "Connected"), NÃO clica
+            if (btnText === 'connect' || btnText === 'reconnect') {
+                btn.click();
+                console.log("[Colab Clicker] ✅ Cliquei no botão Reconnect/Connect (estava desconectado).");
+                return;
+            } else {
+                console.log(`[Colab Clicker] ℹ️ Já conectado (botão: "${btnText}"). Pulando para fallback.`);
+            }
         }
     }
 
