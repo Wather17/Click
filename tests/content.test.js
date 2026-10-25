@@ -9,15 +9,22 @@ const contentScript = fs.readFileSync(
     "utf8"
 );
 
-function runContentScript(activityTarget) {
+async function runContentScript({ activityTarget = null, connectTarget = null, reconnectEnabled = false } = {}) {
     const dispatchedEvents = [];
     const context = {
         document: {
-            querySelector() {
-                return activityTarget;
+            querySelector(selector) {
+                return selector === "colab-connect-button" ? connectTarget : activityTarget;
             }
         },
         window: {},
+        chrome: {
+            storage: {
+                local: {
+                    get: async () => ({ reconnectEnabled })
+                }
+            }
+        },
         MouseEvent: class MouseEvent {
             constructor(type, options) {
                 this.type = type;
@@ -26,6 +33,7 @@ function runContentScript(activityTarget) {
         },
         console: {
             log() {},
+            warn() {},
             error() {}
         }
     };
@@ -36,12 +44,12 @@ function runContentScript(activityTarget) {
         };
     }
 
-    const result = vm.runInNewContext(contentScript, context);
+    const result = await vm.runInNewContext(contentScript, context);
     return { result, dispatchedEvents };
 }
 
-test("content script reports target-not-found without a fallback click", () => {
-    const { result, dispatchedEvents } = runContentScript(null);
+test("content script reports target-not-found without a fallback click", async () => {
+    const { result, dispatchedEvents } = await runContentScript();
 
     assert.deepEqual(JSON.parse(JSON.stringify(result)), {
         action: "periodic-click",
@@ -51,9 +59,9 @@ test("content script reports target-not-found without a fallback click", () => {
     assert.equal(dispatchedEvents.length, 0);
 });
 
-test("content script dispatches one periodic attempt to the supported target", () => {
+test("content script dispatches one periodic attempt when reconnect is disabled", async () => {
     const target = {};
-    const { result, dispatchedEvents } = runContentScript(target);
+    const { result, dispatchedEvents } = await runContentScript({ activityTarget: target });
 
     assert.deepEqual(JSON.parse(JSON.stringify(result)), {
         action: "periodic-click",
@@ -62,4 +70,39 @@ test("content script dispatches one periodic attempt to the supported target", (
     });
     assert.equal(dispatchedEvents.length, 1);
     assert.equal(dispatchedEvents[0].type, "click");
+});
+
+test("content script uses only a visible connect control when reconnect is enabled", async () => {
+    let clickCount = 0;
+    const reconnectTarget = {
+        disabled: false,
+        getBoundingClientRect: () => ({ width: 10, height: 10 }),
+        click: () => { clickCount += 1; }
+    };
+    const connectTarget = { shadowRoot: { querySelector: () => reconnectTarget } };
+    const activityTarget = {};
+
+    const { result, dispatchedEvents } = await runContentScript({
+        activityTarget,
+        connectTarget,
+        reconnectEnabled: true
+    });
+
+    assert.deepEqual(JSON.parse(JSON.stringify(result)), {
+        action: "reconnect",
+        outcome: "attempted",
+        reason: "connect-control-clicked"
+    });
+    assert.equal(clickCount, 1);
+    assert.equal(dispatchedEvents.length, 0);
+});
+
+test("content script does not click generic dialogs in reconnect mode", async () => {
+    const { result } = await runContentScript({ reconnectEnabled: true });
+
+    assert.deepEqual(JSON.parse(JSON.stringify(result)), {
+        action: "reconnect",
+        outcome: "reconnect-not-detected",
+        reason: "visible-connect-control-not-found"
+    });
 });
