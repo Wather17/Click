@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate extension
+        run: npm run validate
+
+      - name: Run tests
+        run: npm test
+
+      - name: Package extension
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: ./scripts/package-extension.sh "${RELEASE_VERSION#v}"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: |
+          version="${RELEASE_VERSION#v}"
+          gh release create "$RELEASE_TAG" \
+            "dist/colab-clicker-v${version}.zip" \
+            dist/SHA256SUMS \
+            --verify-tag \
+            --title "Colab Clicker ${version}" \
+            --generate-notes

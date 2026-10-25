@@ -1,7 +1,7 @@
 {
   "name": "colab-clicker",
   "private": true,
-  "version": "1.0",
+  "version": "0.1.0",
   "description": "Extensão Chromium para tentativas periódicas de atividade no Google Colab.",
   "scripts": {
     "test": "node --test",

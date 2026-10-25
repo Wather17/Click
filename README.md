@@ -78,6 +78,17 @@ npm run validate
 
 O projeto não exige dependências npm externas neste momento.
 
+## Release
+
+As versões seguem o formato semântico no `manifest.json` e nas tags Git. Para criar um release:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+A workflow de release valida o projeto, gera `colab-clicker-v0.1.0.zip` com o `manifest.json` na raiz, cria `SHA256SUMS` e publica os dois arquivos no GitHub Release. O envio para lojas de extensões é uma etapa manual separada.
+
 ## Estrutura
 
 - `manifest.json`: capacidades e metadados da extensão.
