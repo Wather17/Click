@@ -285,6 +285,25 @@ function reconcileState() {
     });
 }
 
+function ensureDefaultSettings() {
+    chrome.storage.local.get("reconnectEnabled", (result) => {
+        const error = getRuntimeError();
+        if (error) {
+            console.error("[Colab Clicker] Erro ao recuperar configurações:", error.message);
+            return;
+        }
+
+        if (result.reconnectEnabled === undefined) {
+            chrome.storage.local.set({ reconnectEnabled: false }, () => {
+                const storageError = getRuntimeError();
+                if (storageError) {
+                    console.error("[Colab Clicker] Erro ao definir configuração padrão:", storageError.message);
+                }
+            });
+        }
+    });
+}
+
 // Escuta mensagens do popup.js.
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "START") {
@@ -305,7 +324,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Recupera o estado depois que o navegador/service worker é inicializado.
 chrome.runtime.onStartup.addListener(reconcileState);
-chrome.runtime.onInstalled.addListener(reconcileState);
+chrome.runtime.onInstalled.addListener(() => {
+    ensureDefaultSettings();
+    reconcileState();
+});
 
 // Escuta o disparo do alarme.
 chrome.alarms.onAlarm.addListener((alarm) => {
