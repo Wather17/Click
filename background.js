@@ -59,6 +59,43 @@ function queryAuthorizedTab(callback) {
     });
 }
 
+function setStopped(callback) {
+    chrome.storage.local.set({
+        isRunning: false,
+        targetTabId: null
+    }, () => {
+        const error = getRuntimeError();
+        callback(error ? {
+            code: "storage-write-failed",
+            message: error.message
+        } : null);
+    });
+}
+
+function replaceAlarm(interval, callback) {
+    chrome.alarms.clear(ALARM_NAME, () => {
+        const clearError = getRuntimeError();
+        if (clearError) {
+            callback({
+                code: "alarm-clear-failed",
+                message: clearError.message
+            });
+            return;
+        }
+
+        chrome.alarms.create(ALARM_NAME, {
+            delayInMinutes: interval,
+            periodInMinutes: interval
+        }, () => {
+            const createError = getRuntimeError();
+            callback(createError ? {
+                code: "alarm-create-failed",
+                message: createError.message
+            } : null);
+        });
+    });
+}
+
 function executeClickOnTargetTab(tabId) {
     if (!isValidTabId(tabId)) {
         saveAttempt({
@@ -112,7 +149,19 @@ function executeClickOnTargetTab(tabId) {
     });
 }
 
-function startMonitoring(interval, sendResponse) {
+function startMonitoring(requestedInterval, sendResponse) {
+    const interval = normalizeInterval(requestedInterval);
+    if (interval === null) {
+        sendResponse({
+            success: false,
+            error: {
+                code: "invalid-interval",
+                message: `Informe um intervalo inteiro entre ${MIN_INTERVAL_MINUTES} e ${MAX_INTERVAL_MINUTES} minutos.`
+            }
+        });
+        return;
+    }
+
     queryAuthorizedTab((queryError, tab) => {
         if (queryError) {
             sendResponse({ success: false, error: queryError });
@@ -147,27 +196,18 @@ function startMonitoring(interval, sendResponse) {
                 return;
             }
 
-            chrome.alarms.create(ALARM_NAME, {
-                delayInMinutes: interval,
-                periodInMinutes: interval
-            }, () => {
-                const alarmError = getRuntimeError();
+            replaceAlarm(interval, (alarmError) => {
                 if (alarmError) {
-                    chrome.storage.local.set({ isRunning: false }, () => {
-                        sendResponse({
-                            success: false,
-                            error: {
-                                code: "alarm-create-failed",
-                                message: alarmError.message
-                            }
-                        });
+                    setStopped(() => {
+                        sendResponse({ success: false, error: alarmError });
                     });
                     return;
                 }
 
                 sendResponse({
                     success: true,
-                    targetTabId: tab.id
+                    targetTabId: tab.id,
+                    intervalMinutes: interval
                 });
                 executeClickOnTargetTab(tab.id);
             });
@@ -176,36 +216,71 @@ function startMonitoring(interval, sendResponse) {
 }
 
 function stopMonitoring(sendResponse) {
-    chrome.alarms.clear(ALARM_NAME, (wasCleared) => {
+    chrome.alarms.clear(ALARM_NAME, () => {
         const alarmError = getRuntimeError();
         if (alarmError) {
-            sendResponse({
-                success: false,
-                error: {
-                    code: "alarm-clear-failed",
-                    message: alarmError.message
-                }
-            });
+            sendResponse({ success: false, error: {
+                code: "alarm-clear-failed",
+                message: alarmError.message
+            } });
             return;
         }
 
-        chrome.storage.local.set({
-            isRunning: false,
-            targetTabId: null
-        }, () => {
-            const storageError = getRuntimeError();
+        setStopped((storageError) => {
             if (storageError) {
-                sendResponse({
-                    success: false,
-                    error: {
-                        code: "storage-write-failed",
-                        message: storageError.message
-                    }
-                });
+                sendResponse({ success: false, error: storageError });
                 return;
             }
 
-            sendResponse({ success: true, alarmCleared: wasCleared });
+            sendResponse({ success: true });
+        });
+    });
+}
+
+function reconcileState() {
+    chrome.storage.local.get(["isRunning", "intervalMinutes", "targetTabId"], (result) => {
+        const storageError = getRuntimeError();
+        if (storageError) {
+            console.error("[Colab Clicker] Erro ao recuperar estado:", storageError.message);
+            return;
+        }
+
+        chrome.alarms.get(ALARM_NAME, (alarm) => {
+            const alarmError = getRuntimeError();
+            if (alarmError) {
+                console.error("[Colab Clicker] Erro ao recuperar alarme:", alarmError.message);
+                return;
+            }
+
+            const stateIsValid = isValidMonitoringState(result);
+
+            if (!stateIsValid) {
+                if (alarm || result.isRunning || result.targetTabId !== undefined) {
+                    chrome.alarms.clear(ALARM_NAME, () => {
+                        setStopped(() => {});
+                    });
+                }
+                return;
+            }
+
+            chrome.tabs.get(result.targetTabId, () => {
+                const tabError = getRuntimeError();
+                if (tabError) {
+                    chrome.alarms.clear(ALARM_NAME, () => {
+                        setStopped(() => {});
+                    });
+                    return;
+                }
+
+                const alarmMatchesState = alarmMatchesInterval(alarm, result.intervalMinutes);
+                if (!alarmMatchesState) {
+                    replaceAlarm(result.intervalMinutes, (replaceError) => {
+                        if (replaceError) {
+                            console.error("[Colab Clicker] Erro ao reconciliar alarme:", replaceError.message);
+                        }
+                    });
+                }
+            });
         });
     });
 }
@@ -213,8 +288,10 @@ function stopMonitoring(sendResponse) {
 // Escuta mensagens do popup.js.
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "START") {
-        const interval = message.interval || 5;
-        startMonitoring(interval, sendResponse);
+        const requestedInterval = message.interval === undefined
+            ? DEFAULT_INTERVAL_MINUTES
+            : message.interval;
+        startMonitoring(requestedInterval, sendResponse);
         return true;
     }
 
@@ -225,6 +302,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     return false;
 });
+
+// Recupera o estado depois que o navegador/service worker é inicializado.
+chrome.runtime.onStartup.addListener(reconcileState);
+chrome.runtime.onInstalled.addListener(reconcileState);
 
 // Escuta o disparo do alarme.
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -242,6 +323,9 @@ chrome.alarms.onAlarm.addListener((alarm) => {
         if (result.isRunning && isValidTabId(result.targetTabId)) {
             console.log(`[Colab Clicker] Executando tentativa na aba ${result.targetTabId}.`);
             executeClickOnTargetTab(result.targetTabId);
+            return;
         }
+
+        reconcileState();
     });
 });
