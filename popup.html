@@ -3,30 +3,32 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Colab Clicker</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            width: 250px;
+            width: 280px;
             margin: 0;
             padding: 15px;
             background-color: #202124;
             color: #e8eaed;
-            text-align: center;
         }
 
         h2 {
-            margin-top: 0;
+            margin: 0;
             font-size: 16px;
             color: #8ab4f8;
+            text-align: center;
         }
 
         .status-container {
-            margin: 15px 0;
+            margin: 15px 0 10px;
             padding: 10px;
             border-radius: 6px;
             background-color: #303134;
             font-weight: bold;
+            text-align: center;
         }
 
         .status-stopped {
@@ -37,19 +39,38 @@
             color: #81c995;
         }
 
+        .status-starting {
+            color: #fdd663;
+        }
+
+        .status-error {
+            color: #f28b82;
+        }
+
+        .details {
+            margin-bottom: 15px;
+            color: #bdc1c6;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .details p {
+            margin: 4px 0;
+            overflow-wrap: anywhere;
+        }
+
         .input-group {
             margin-bottom: 15px;
-            text-align: left;
         }
 
         .input-group label {
             display: block;
-            font-size: 12px;
             margin-bottom: 5px;
             color: #9aa0a6;
+            font-size: 12px;
         }
 
-        .input-group input {
+        .input-group input[type="number"] {
             width: 100%;
             box-sizing: border-box;
             padding: 8px;
@@ -65,16 +86,26 @@
             border-color: #8ab4f8;
         }
 
+        .toggle-label {
+            display: flex !important;
+            gap: 8px;
+            align-items: flex-start;
+            cursor: pointer;
+        }
+
+        .toggle-label input {
+            margin-top: 2px;
+        }
+
+        .error-display {
+            margin-bottom: 12px;
+            color: #f28b82;
+            font-size: 12px;
+        }
+
         .btn-group {
             display: flex;
             gap: 10px;
-        }
-
-        .last-click-info {
-            font-size: 11px;
-            color: #9aa0a6;
-            margin-bottom: 15px;
-            display: none;
         }
 
         button {
@@ -105,32 +136,44 @@
             color: #000;
         }
 
-        button:disabled {
-            background-color: #5f6368;
-            color: #9aa0a6;
+        button:disabled,
+        input:disabled {
+            opacity: 0.55;
             cursor: not-allowed;
         }
     </style>
 </head>
 
 <body>
-
     <h2>Colab Clicker</h2>
 
-    <div class="status-container" id="statusDisplay">
-        <span class="status-stopped">Parado</span>
+    <div class="status-container status-stopped" id="statusDisplay" role="status" aria-live="polite">
+        Parado
+    </div>
+
+    <div class="details" aria-live="polite">
+        <p id="targetDisplay">Aba monitorada: nenhuma</p>
+        <p id="nextRunDisplay">Próximo ciclo: --</p>
+        <p id="lastAttemptDisplay">Última tentativa: --</p>
     </div>
 
     <div class="input-group">
         <label for="intervalInput">Intervalo de clique (minutos):</label>
-        <input type="number" id="intervalInput" min="1" max="60" value="5">
+        <input type="number" id="intervalInput" min="1" max="60" step="1" value="5">
     </div>
 
-    <div class="last-click-info" id="lastClickDisplay">Último clique: --:--:--</div>
+    <div class="input-group">
+        <label class="toggle-label" for="reconnectInput">
+            <input type="checkbox" id="reconnectInput">
+            <span>Tentar reconectar quando o controle seguro estiver visível</span>
+        </label>
+    </div>
+
+    <div class="error-display" id="errorDisplay" role="alert" hidden></div>
 
     <div class="btn-group">
-        <button id="btnStart">Iniciar</button>
-        <button id="btnStop" disabled>Parar</button>
+        <button id="btnStart" type="button">Iniciar</button>
+        <button id="btnStop" type="button" disabled>Parar</button>
     </div>
 
     <script src="core.js"></script>
