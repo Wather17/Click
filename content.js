@@ -1,40 +1,41 @@
-// content.js - Executa literalmente um clique na interface para manter vivo
+// content.js - Executa a tentativa periódica de atividade no Colab
 
 (function () {
-    console.log("[Colab Clicker] Tentando manter sessão ativa...");
+    const activityTarget = document.querySelector("colab-tab-layout-container");
 
-    // Estratégia 1: Botão padrão de "Connect" (quando cai e pede reconexão)
-    const connectButton = document.querySelector('colab-connect-button');
-    if (connectButton && connectButton.shadowRoot) {
-        const btn = connectButton.shadowRoot.querySelector('#connect');
-        if (btn) {
-            btn.click();
-            console.log("[Colab Clicker] Cliquei no botão Reconnect/Connect.");
-            return;
-        }
+    if (!activityTarget) {
+        console.log("[Colab Clicker] Alvo de atividade não encontrado.");
+        return {
+            action: "periodic-click",
+            outcome: "target-not-found",
+            reason: "colab-tab-layout-container-not-found"
+        };
     }
 
-    // Estratégia 2: Ok button em diálogos de "Ainda está aí?"
-    const dialogBtn = document.querySelector('mwc-button[dialogaction="ok"]');
-    if (dialogBtn) {
-        dialogBtn.click();
-        console.log("[Colab Clicker] Cliquei no botão OK do diálogo ativo.");
-        return;
-    }
-
-    // Estratégia 3: Clicar sutilmente em um elemento inofensivo no topo (Header)
-    // para simplesmente simular atividade de mouse.
-    const header = document.querySelector('colab-tab-layout-container') || document.body;
-    if (header) {
-        // Clica no canto (1,1) para não esbarrar em nenhum atalho.
-        const clickEvent = new MouseEvent('click', {
+    try {
+        const clickEvent = new MouseEvent("click", {
             view: window,
             bubbles: true,
             cancelable: true,
             clientX: 1,
             clientY: 1
         });
-        header.dispatchEvent(clickEvent);
-        console.log("[Colab Clicker] Clique de fallback (simulação de presença) disparado.");
+
+        activityTarget.dispatchEvent(clickEvent);
+        console.log("[Colab Clicker] Tentativa periódica disparada.");
+
+        return {
+            action: "periodic-click",
+            outcome: "attempted",
+            reason: "activity-target-dispatched"
+        };
+    } catch (error) {
+        console.error("[Colab Clicker] Falha na tentativa periódica:", error);
+
+        return {
+            action: "periodic-click",
+            outcome: "execution-error",
+            reason: error instanceof Error ? error.message : "unknown-error"
+        };
     }
 })();
