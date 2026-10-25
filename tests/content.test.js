@@ -43,7 +43,7 @@ function runContentScript(activityTarget) {
 test("content script reports target-not-found without a fallback click", () => {
     const { result, dispatchedEvents } = runContentScript(null);
 
-    assert.deepEqual(result, {
+    assert.deepEqual(JSON.parse(JSON.stringify(result)), {
         action: "periodic-click",
         outcome: "target-not-found",
         reason: "colab-tab-layout-container-not-found"
@@ -55,7 +55,7 @@ test("content script dispatches one periodic attempt to the supported target", (
     const target = {};
     const { result, dispatchedEvents } = runContentScript(target);
 
-    assert.deepEqual(result, {
+    assert.deepEqual(JSON.parse(JSON.stringify(result)), {
         action: "periodic-click",
         outcome: "attempted",
         reason: "activity-target-dispatched"
