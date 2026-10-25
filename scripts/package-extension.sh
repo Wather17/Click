@@ -58,7 +58,10 @@ done
 )
 
 unzip -tq "$artifact"
-sha256sum "$artifact" > "$checksum_file"
+(
+    cd "$dist_dir"
+    sha256sum "$(basename "$artifact")"
+) > "$checksum_file"
 
 printf 'Pacote criado: %s\n' "$artifact"
 printf 'Checksum criado: %s\n' "$checksum_file"
