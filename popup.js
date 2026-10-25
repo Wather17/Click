@@ -6,7 +6,7 @@ const lastClickDisplay = document.getElementById('lastClickDisplay');
 
 // Recupera o estado atual ao abrir o popup
 chrome.storage.local.get(['isRunning', 'intervalMinutes', 'lastClickTime'], (result) => {
-    if (result.intervalMinutes) {
+    if (isValidInterval(result.intervalMinutes)) {
         intervalInput.value = result.intervalMinutes;
     }
 
@@ -22,19 +22,40 @@ chrome.storage.local.get(['isRunning', 'intervalMinutes', 'lastClickTime'], (res
 });
 
 btnStart.addEventListener('click', () => {
-    const interval = parseInt(intervalInput.value, 10) || 5;
+    const interval = normalizeInterval(intervalInput.value);
+    if (interval === null) {
+        intervalInput.setCustomValidity('Informe um intervalo inteiro entre 1 e 60 minutos.');
+        intervalInput.reportValidity();
+        return;
+    }
+
+    intervalInput.setCustomValidity('');
 
     chrome.runtime.sendMessage({ action: "START", interval: interval }, (response) => {
         if (response && response.success) {
             setUIState(true);
+            return;
+        }
+
+        if (response && response.error) {
+            statusDisplay.textContent = response.error.message;
         }
     });
+});
+
+intervalInput.addEventListener('input', () => {
+    intervalInput.setCustomValidity('');
 });
 
 btnStop.addEventListener('click', () => {
     chrome.runtime.sendMessage({ action: "STOP" }, (response) => {
         if (response && response.success) {
             setUIState(false);
+            return;
+        }
+
+        if (response && response.error) {
+            statusDisplay.textContent = response.error.message;
         }
     });
 });
