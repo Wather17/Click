@@ -2,7 +2,8 @@
   "manifest_version": 3,
   "name": "Colab Clicker",
   "version": "1.0",
-  "description": "Mantém o Google Colab rodando evitando desconexões por inatividade.",
+  "short_name": "Colab Clicker",
+  "description": "Faz tentativas periódicas de atividade em uma aba autorizada do Google Colab.",
   "permissions": [
     "storage",
     "alarms",
@@ -12,7 +13,8 @@
     "https://colab.research.google.com/*"
   ],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_title": "Abrir Colab Clicker"
   },
   "background": {
     "service_worker": "background.js"
